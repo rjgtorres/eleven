@@ -1,0 +1,33 @@
+* Eleven
+
+This is a game I have played many nights with my friends. I decided to try and make this a project that will allow me playing with them, even when we are months without seeing each other.
+
+** Rules
+
+Here are the initial set of rules I've remembered to write this game:
+
+
+ - two decks of cards
+ - each player starts with 11 cards in hand
+ - at least two players
+ - the goal is to make trios and sequences acording to the following table:
+ |trio|sequence|
+ |  2 |    0   |
+ |  1 |    1   |
+ |  0 |    2   |
+ |  3 |    0   |
+ |  2 |    1   |
+ |  1 |    2   |
+ |  0 |    3   |
+
+ - a trio is a group of three cards with the same number/figures
+ -  a sequence is a sequence of at least 4 consecutive cards of the same suite
+
+the goal of each game is to complete the defined task and empty ones hand the game processes the following way:
+ - in the start of a player turn, draw a card either from the deck or from the discard pile.
+ - after that the other players have the option to draw cards from the discard pile
+ - at the end of its turn, a card must be discarded to the discard pile
+ - In a players turn, if he has the goal completed, he can put the cards that complete the goal into its board.
+ - then he can proceed to put cards from his hand that fit in other players boards
+ - the jokers can represent any card, but a sequence cannot have two consecutive jokers, and a trio cannot be composed of three jockers.
+
