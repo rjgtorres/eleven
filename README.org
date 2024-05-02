@@ -31,3 +31,12 @@ the goal of each game is to complete the defined task and empty ones hand the ga
  - then he can proceed to put cards from his hand that fit in other players boards
  - the jokers can represent any card, but a sequence cannot have two consecutive jokers, and a trio cannot be composed of three jockers.
 
+
+** Things to still to implement [0/5]:
+ - [ ] generic and specific add_card methods
+ - [ ] game rounds [0/2]:
+   - [ ] Define the goals
+   - [ ] define start and end of each round
+ - [ ] implement the graphical layout
+ - [ ] define the server
+ - [ ] define player queue

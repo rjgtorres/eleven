@@ -1,35 +1,6 @@
 (in-package #:eleven)
 
 
- ;; #############################################################################
-
-;; rules of the Eleven game
-;; two decks of cards
-;; each player starts with 11 cards in hand
-;; at least two players
-;; the goal is to make trios and sequences acording to the following table:
-;; |trio|sequence|
-;; |  2 |    0   |
-;; |  1 |    1   |
-;; |  0 |    2   |
-;; |  3 |    0   |
-;; |  2 |    1   |
-;; |  1 |    2   |
-;; |  0 |    3   |
-
-;; a trio is a group of three cards with the same number/figure
-;; a sequence is a sequence of at least 4 consecutive cards of the same suite
-
-;; the goal of each game is to complete the defined task and empty ones hand
-;; the game processes the following way:
-;; in the start of a player turn, draw a card either from the deck or from the discard pile.
-;; after that the other players have the option to draw cards from the discard pile
-;; at the end of its turn, a card must be discarded to the discard pile
-;; In a players turn, if he has the goal completed, he can put the cards that complete the goal into its board.
-;; then he can proceed to put cards from his hand that fit in other players boards
-;; the jokers can represent any card, but a sequence cannot have two consecutive jokers, and a trio cannot be composed of three jockers.
-;;
-
 (defclass player ()
   ((hand :initarg :hand :accessor hand :type list)
    (board :initarg :board :accessor board :type list)
@@ -75,8 +46,6 @@
 		     do (draw-card pl deck))
 	       (push pl players)))
     (values players deck discard-pile)))
-
-;; now I need to defne the trios and sequences, a trio can be a list with three lists inside, each with a maximum lenght of 2, a sequence is a list with a minimum size of 4
 
 (defclass goal ()
   ((content :accessor content)))
@@ -162,6 +131,8 @@
                      (< (first (last a)) (first (last b)))))))))
 
 (defparameter sequence-order '(:ace 2 3 4 5 6 7 8 9 10 :jack :queen :king :ace))
+
+
 
 ;; (assert (not (let ((lastcard))
 ;; 	       (loop named loo for i in (rest lst)
