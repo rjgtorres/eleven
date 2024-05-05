@@ -33,7 +33,10 @@ the goal of each game is to complete the defined task and empty ones hand the ga
 
 
 ** Things to still to implement [0/5]:
- - [ ] generic and specific add_card methods
+ - [ ] add more tests
+ - [ ] generic and specific add_card methods [0/2]
+   - [ ] addcard trio method
+   - [ ] addcard sequence method
  - [ ] game rounds [0/2]:
    - [ ] Define the goals
    - [ ] define start and end of each round
