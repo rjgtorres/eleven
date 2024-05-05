@@ -25,7 +25,7 @@
   (make-instance 'card :face face :suite suite :points points))
 
 (defmethod jokerp ((card card))
-  (equal card :joker))
+  (equal (face card) :joker))
 
 (defun make-deck ()
   (let ((deck))
@@ -61,7 +61,7 @@
 (defmethod view-goal ((goal goal))
   (content goal))
 
-(defgeneric emptyp ((goal goal)))
+(defgeneric emptyp (goal))
 
 (defgeneric lay-down (lst goal))
 
@@ -92,6 +92,31 @@
 	    nil "each card of a trio needs to be of a different suite: ~a" lst))
   (loop for i from 0 below 3
 	do (push (nth i lst) (nth i (content trio)))))
+
+;; rules to add a card to a trio
+;; jokers cannot be removed from trios
+;; a card added has to be equal to one of the ones that are present.
+;; the maximum number of cards in each pile of the trio is 2
+;; if there is a joker, any of the cards that are not present can be put on top of it
+;; a joker can go on top of any card
+
+(defmethod add-card ((card card) pos (trio trio))
+  (assert (not (emptyp trio)))
+  (assert (and (>= pos 0) (< pos 3)))
+  (let* ((pile (nth pos (content trio)))
+	 (cardofpile (first pile)))
+    (assert (= (length pile) 1))
+    ;; (assert (zerop (length (remove-if (lambda (x) (equal x (face card))) (mapcar #'face (content trio))))))
+    (cond ((jokerp card)
+	   (assert (not (jokerp cardofpile)))
+	   (push card (nth pos (content trio))))
+	  (t
+	   (if (jokerp cardofpile)
+	       (assert (zerop (length (remove-if-not (lambda (x) (equal (face x) (face card))) (content trio)))))
+	       (assert (and
+			(equal (face card) (face cardofpile))
+			(equal (suite card) (suite cardofpile)))))
+	   (push card (nth pos (content trio)))))))
 
 (defclass seq (goal)
   ((content :accessor content :initform nil)))
