@@ -175,6 +175,17 @@
 	     nil "Rules for sequence are not followed."))
   (setf (content seq) lst))
 
+;; cards can only be put in each extremity of the sequence or substitute a joker
+;; only an ace can be added to the sequence, either before the 2 or after the king
+;; when substituting a joker, the joker goes to the hand of the player
+;; pos can be :begin, :end or number
+
+(defmethod add-card ((card card) pos (seq seq))
+  (assert (when (numberp pos)
+	    (or (jokerp card)
+		(and (not (jokerp card))
+		     (jokerp (nth pos (content seq))))))))
+
 (defun sort-sequence (lst)
   (let ((seq-order))
     (if (> (length (intersection lst '(2 3))) 0)
