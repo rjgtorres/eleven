@@ -7,11 +7,7 @@
 (define-test lay-down-sequence
   :parent sequences
     (fail (let ((seq (make-seq)))
-	    (lay-down (list (eleven::make-card :ace 25 :clubs)
-			    (eleven::make-card 2 2 :clubs)
-			    (eleven::make-card 2 2 :clubs)
-			    (eleven::make-card 4 4 :clubs))
-			 seq)
+	       (lay-down '((:ace :clubs 2) (2 :clubs 2) (2 :clubs 2) (4 :clubs 2)) seq)
 	       seq)
 	simple-error "sequence with a card repeated"))
 
@@ -21,14 +17,7 @@
 (define-test add-card-trio
   :parent trios
   (let* ((trio (eleven::make-trio)))
-<<<<<<< HEAD
-    (lay-down (list (eleven::make-card 2 2 :clubs)
-		    (eleven::make-card :joker 50)
-		    (eleven::make-card 2 2 :diamonds))
-	      trio)
-    (fail (eleven::add-card (eleven::make-card 2 2 :spades) 0 trio))
-    (true (eleven::add-card (eleven::make-card :joker 50) 0 trio))))
-=======
+
     (lay-down (list (eleven::make-card 2 :suite :clubs)
 		    (eleven::make-card :joker)
 		    (eleven::make-card 2 :suite :diamonds))
@@ -44,4 +33,3 @@
           "Cannot have more than 2 jokers in a trio.")
     (true (eleven::add-card (eleven::make-card 2 :suite :diamonds) 2 trio))
     (true (eleven::add-card (eleven::make-card 2 :suite :spades) 1 trio))))
->>>>>>> 3d08a3b (WIP support add-card for trios)
