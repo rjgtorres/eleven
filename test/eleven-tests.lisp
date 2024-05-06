@@ -7,7 +7,11 @@
 (define-test lay-down-sequence
   :parent sequences
     (fail (let ((seq (make-seq)))
-	       (lay-down '((:ace :clubs 2) (2 :clubs 2) (2 :clubs 2) (4 :clubs 2)) seq)
+	    (lay-down (list (eleven::make-card :ace :suite :clubs)
+			    (eleven::make-card 2 :suite :clubs)
+			    (eleven::make-card 2 :suite :clubs)
+			    (eleven::make-card 4 :suite :clubs))
+			 seq)
 	       seq)
 	simple-error "sequence with a card repeated"))
 
@@ -17,7 +21,6 @@
 (define-test add-card-trio
   :parent trios
   (let* ((trio (eleven::make-trio)))
-
     (lay-down (list (eleven::make-card 2 :suite :clubs)
 		    (eleven::make-card :joker)
 		    (eleven::make-card 2 :suite :diamonds))

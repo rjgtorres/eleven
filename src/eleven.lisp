@@ -21,21 +21,21 @@
    (suite :initarg :suite :accessor suite)
    (points :initarg :points :accessor points)))
 
-(defun make-card (face points &optional suite)
+(defun make-card (face &key points suite)
   (make-instance 'card :face face :suite suite :points points))
 
 (defmethod jokerp ((card card))
-  (equal card :joker))
+  (equal (face card) :joker))
 
 (defun make-deck ()
   (let ((deck))
     (loop repeat 2
-	  do (push (make-card :joker 50) deck))
+	  do (push (make-card :joker :points 50) deck))
     (dolist (suite '(:spades :hearts :diamonds :clubs))
       (loop for number from 2 upto 10
-            do (push (make-card number number suite) deck))
+            do (push (make-card number :points number :suite suite) deck))
       (dolist (face '(:jack :queen :king :ace))
-        (push (make-card face (if (equal face :ace) 25 10) suite) deck)))
+        (push (make-card face :points (if (equal face :ace) 25 10) :suite suite) deck)))
     deck))
 
 (defun setup-game (numberofplayers)
@@ -61,7 +61,7 @@
 (defmethod view-goal ((goal goal))
   (content goal))
 
-(defgeneric emptyp ((goal goal)))
+(defgeneric emptyp (goal))
 
 (defgeneric lay-down (lst goal))
 
@@ -87,7 +87,37 @@
 	    nil "all cards in a trio need to have the same number: ~a" lst)
     (assert (if (= (length nojokers) 1)
 		t
+		(= (length nojokers)
+		   (length (remove-duplicates (mapcar #'suite nojokers)))))
+	    nil "each card of a trio needs to be of a different suite: ~a" lst))
+  (loop for i from 0 below 3
+	do (push (nth i lst) (nth i (content trio)))))
 
+;; rules to add a card to a trio
+;; jokers cannot be removed from trios
+;; a card added has to be equal to one of the ones that are present.
+;; the maximum number of cards in each pile of the trio is 2
+;; if there is a joker, any of the cards that are not present can be put on top of it
+;; a joker can go on top of any card, but maybe put it in the second position
+
+(defmethod list_all_of_card ((card card) trio)
+  (reduce #'append
+          (mapcar (lambda (inner-lst)
+                    (remove-if-not
+                     #'(lambda (x) (and
+                               (equal (face x) (face card))
+                               (if (equal (face card) :joker)
+                                   t
+                                   (equal (suite x) (suite card)))))
+                     inner-lst))
+                  (content trio))))
+
+(defmethod add-card ((card card) pos (trio trio))
+  (assert (not (emptyp trio)))
+  (assert (and (>= pos 0) (< pos 3)))
+  (let* ((pile (nth pos (content trio)))
+	 (cardofpile (first pile)))
+    (assert (= (length pile) 1))
     (cond ((jokerp card)
 	   (assert (not (jokerp cardofpile)))
            (assert (< (length (list_all_of_card (make-card :joker) trio))
@@ -121,24 +151,27 @@
 			       for x = (face (first a))
 			       for y = (face (second a))
 			       for z = (face (third a))
-			       with seq-order = (if (> (length (intersection (list x y z) '(2 3))) 0)
+			       with seq-order = (if (>
+                                                     (length (intersection (list x y z) '(2 3)))
+                                                     0)
 						    (butlast sequence-order)
 						    (rest sequence-order))
-			       do (cond ((not z) (return-from tk :success))
-					  ((and (jokerp y) (or (jokerp x) (jokerp z)))
-					   (return-from tk :fail))
-					  ((jokerp y)
-					   (when (not (equal (+ (position x seq-order) 2)
-							     (position z seq-order)))
-					     (return-from tk :fail)))
-					  ((= (length a) (length lst))
-					   (when (equal y :ace)
-							 (return-from tk :fail)))
-					  ((zerop (count :joker (list x y z)))
-					   (unless (< (position x seq-order)
-						      (position y seq-order)
-						      (position z seq-order))
-					     (return-from tk :fail)))))))
+			       do (cond ((not z)
+                                         (return-from tk :success))
+					((and (jokerp y) (or (jokerp x) (jokerp z)))
+					 (return-from tk :fail))
+					((and (jokerp y)
+                                              (not (equal (+ (position x seq-order) 2)
+							  (position z seq-order))))
+					 (return-from tk :fail))
+					((= (length a) (length lst))
+					 (when (equal y :ace)
+					   (return-from tk :fail)))
+					((zerop (count :joker (list x y z)))
+					 (unless (< (position x seq-order)
+						    (position y seq-order)
+						    (position z seq-order))
+					   (return-from tk :fail)))))))
 	     nil "Rules for sequence are not followed."))
   (setf (content seq) lst))
 
