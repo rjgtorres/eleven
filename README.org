@@ -5,8 +5,6 @@ This is a game I have played many nights with my friends. I decided to try and m
 ** Rules
 
 Here are the initial set of rules I've remembered to write this game:
-
-
  - two decks of cards
  - each player starts with 11 cards in hand
  - at least two players
@@ -32,12 +30,12 @@ the goal of each game is to complete the defined task and empty ones hand the ga
  - the jokers can represent any card, but a sequence cannot have two consecutive jokers, and a trio cannot be composed of three jockers.
 
 
-** Things to still to implement [0/5]:
+** Things to still to implement [0/6]:
  - [ ] add more tests
- - [ ] generic and specific add_card methods [0/2]
-   - [ ] addcard trio method
+ - [-] generic and specific add_card methods [1/2]
+   - [X] addcard trio method
    - [ ] addcard sequence method
- - [ ] game rounds [0/2]:
+ - [ ] game mechanics [0/2]:
    - [ ] Define the goals
    - [ ] define start and end of each round
  - [ ] implement the graphical layout
