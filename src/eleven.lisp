@@ -8,7 +8,7 @@
    (name :initarg :name :initform "" :accessor name :type string)))
 
 (defmethod count-points ((player player))
- (reduce #'+ (mapcar #'first (mapcar #'last (hand player)))))
+ (reduce #'+ (mapcar #'points (hand player))))
 
 (defun make-player (&optional name)
   (make-instance 'player :hand nil :board nil :name name))
