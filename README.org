@@ -30,11 +30,11 @@ the goal of each game is to complete the defined task and empty ones hand the ga
  - the jokers can represent any card, but a sequence cannot have two consecutive jokers, and a trio cannot be composed of three jockers.
 
 
-** Things to still to implement [0/6]:
+** Things to still to implement [1/6]:
  - [ ] add more tests
- - [-] generic and specific add_card methods [1/2]
+ - [X] generic and specific add_card methods [2/2]
    - [X] addcard trio method
-   - [ ] addcard sequence method
+   - [X] addcard sequence method
  - [ ] game mechanics [0/5]:
    - [ ] Define the goals
    - [ ] define start and end of each round

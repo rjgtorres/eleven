@@ -8,13 +8,27 @@
    (name :initarg :name :initform "" :accessor name :type string)))
 
 (defmethod count-points ((player player))
-  (reduce #'+ (mapcar #'points (hand player))))
+  (setf (points player)
+	(+ (points player)
+	   (reduce #'+ (mapcar #'points (hand player))))))
+
+(defmethod see-points ((player player))
+  (points player))
 
 (defun make-player (&optional name)
   (make-instance 'player :hand nil :board nil :name name))
 
 (defmethod draw-card ((obj player) (deck stack))
   (push (stack-pop deck) (hand obj)))
+
+;; (defmethod discard-card ((player player) pos (discard-pile stack))
+;;   )
+
+(defmethod empty-hand ((player player))
+  (setf (hand player) '()))
+
+(defmethod empty-board ((player player))
+  (setf (board player) '()))
 
 (defclass card ()
   ((face :initarg :face :accessor face)
@@ -254,6 +268,35 @@
                   (if (and a-index b-index)
                       (< a-index b-index)
                       (< (face (last a)) (face (last b)))))))))
+
+(defun end-round (players deck discard-pile)
+  (dolist (player players)
+    (count-points player)
+    (empty-hand player)
+    (empty-board player))
+  (empty-stack deck)
+  (empty-stack discard-pile))
+
+(defun turn (player others)
+  ;; define where to draw from. If from the discard pile, how many.
+  ;; go around the table (need to check the player order) to check if anyone wants cards from the discard
+  ;; does the player want to lay-down?
+  ;; if the player has layd-down does he want to add cards? after having added a card, has the round ended?
+  ;; discard card
+  )
+
+(defun game (nplayers)
+  (loop for tr in '(2 1 0 3 2 1 0)
+	for sq in '(0 1 2 0 1 2 3)
+	do (multiple-value-bind (players deck discard-pile) (setup-game nplayers)
+	     (loop named round
+	      do (progn (when (and (equal tr (reduce #'+ (mapcar #'(lambda (x) (typep x 'trio))
+								 (mapcar #'board player))))
+			       (find t (mapcar #'(lambda (x) (null (hand x))) players)))
+			  (return-from round))))))
+  )
+
+
 
 (defparameter sequence-order '(:ace 2 3 4 5 6 7 8 9 10 :jack :queen :king :ace))
 

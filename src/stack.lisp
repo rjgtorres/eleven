@@ -23,6 +23,9 @@
 (defmethod stack-see-all ((stack stack))
   (stack-elements stack))
 
+(defmethod empty-stack ((stack stack))
+  (setf (stack-elements stack) '()))
+
 (defmethod shuffle-stack ((stack stack))
   (setf (stack-elements stack)
 	(sort (stack-elements stack)
