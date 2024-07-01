@@ -55,22 +55,36 @@
         (push (make-card face :points (if (equal :ace face) 25 10) :suite suite) deck)))
     deck))
 
-(defun setup-game (numberofplayers)
-  (assert (and (> numberofplayers 0)
-	       (< numberofplayers 7)))
-  (let ((players)
-	(deck (make-stack))
+;; (defun setup-game (numberofplayers)
+;;   (assert (and (> numberofplayers 0)
+;; 	       (< numberofplayers 7)))
+;;   (let ((players)
+;; 	(deck (make-stack))
+;; 	(discard-pile (make-stack)))
+;;     (loop repeat 2
+;; 	  do (dolist (card (make-deck))
+;; 	       (stack-push card deck)))
+;;     (shuffle-stack deck)
+;;     (loop for i from 1 upto numberofplayers
+;; 	  do (let ((pl (make-player)))
+;; 	       (loop repeat 11
+;; 		     do (draw-card pl deck))
+;; 	       (push pl players)))
+;;     (values players deck discard-pile)))
+
+(defun setup-game (players)
+  (let ((deck (make-stack))
 	(discard-pile (make-stack)))
     (loop repeat 2
 	  do (dolist (card (make-deck))
 	       (stack-push card deck)))
     (shuffle-stack deck)
-    (loop for i from 1 upto numberofplayers
-	  do (let ((pl (make-player)))
+    (loop for pl in players
+	  do (progn
+               (reset pl)
 	       (loop repeat 11
-		     do (draw-card pl deck))
-	       (push pl players)))
-    (values players deck discard-pile)))
+		     do (draw-card pl deck))))
+    (values deck discard-pile)))
 
 (defclass goal ()
   ((content :accessor content)))
@@ -299,6 +313,38 @@
 
 
 (defparameter sequence-order '(:ace 2 3 4 5 6 7 8 9 10 :jack :queen :king :ace))
+
+
+;; TEMP mockup for the game logic, this will need to be revised
+
+(defparameter round-goals '((2 0) (1 1) (0 2) (3 0) (2 1) (1 2) (0 3)))
+
+(defun draw-phase (player players deck discard))
+
+
+(defun thegame (nplayers)
+  (assert (and (> numberofplayers 1)
+	       (< numberofplayers 7)))
+  (let ((start-player 0)
+        (players (loop for pl from 0 below nplayers
+                       collect (make-player))))
+      (loop for round in round-goals
+        do (multiple-value-bind
+                 (deck discard-pile)
+               (setup-game players)
+             (loop named turns
+                   do (let ((active-player (nth (mod (+ i start-player) nplayers) players))) ; FIXME i needs to be defined
+                        ;; function for player to choose from where to draw
+                        ;; function to check if other players want to draw from the discard
+                        ;; function to check if player wants to lay down
+                        ;; function to check if player wants to add cards to the goals
+                        (when (null (hand active-player))
+                          (return-from turns))))
+             (loop for player in players
+                   do (count-points player))
+             (setf start-player (1+ start-player))))
+    (format t "The final score is ~a~%" (sort (mapcar #'points (players)) #'<))))
+
 
 ;; (setf ls (append (subseq ls 0 2) (list 3) (subseq ls 2)))
 ;; (push 3 (rest (nthcdr 2 lk)))

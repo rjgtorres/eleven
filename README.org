@@ -35,10 +35,10 @@ the goal of each game is to complete the defined task and empty ones hand the ga
  - [X] generic and specific add_card methods [2/2]
    - [X] addcard trio method
    - [X] addcard sequence method
- - [ ] game mechanics [0/5]:
-   - [ ] Define the goals
-   - [ ] define start and end of each round
-   - [ ] define turn and its stages
+ - [-] game mechanics [3/5]:
+   - [X] Define the goals
+   - [X] define start and end of each round
+   - [X] define turn and its stages
    - [ ] draw, this can be in you turn or not, can be from deck or discard pile
    - [ ] discard
  - [ ] implement the graphical layout
