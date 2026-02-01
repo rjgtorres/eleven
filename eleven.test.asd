@@ -8,6 +8,6 @@
   :serial t
   :perform (asdf:test-op (op c) (uiop:symbol-call '#:parachute '#:test '#:eleven.test))
   :components ((:file "package")
-	       (:file "eleven-tests")
-	       (:file "stack-tests")))
+	       (:file "stack-tests")
+	       (:file "eleven-tests")))
 
