@@ -437,32 +437,211 @@
   (empty-stack deck)
   (empty-stack discard-pile))
 
+(defun prompt-line (prompt)
+  (format t "~a" prompt)
+  (force-output)
+  (or (read-line *standard-input* nil nil)
+      (error "Unexpected end of input")))
+
+(defun trim-input (line)
+  (string-trim '(#\Space #\Tab #\Newline #\Return) line))
+
+(defun parse-line-integer (line)
+  (handler-case
+      (multiple-value-bind (value position)
+          (read-from-string (trim-input line) nil :eof)
+        (when (and (integerp value)
+                   (= position (length (trim-input line))))
+          value))
+    (error () nil)))
+
+(defun prompt-yes-no (prompt)
+  (loop for line = (string-downcase (trim-input (prompt-line prompt)))
+        do (cond ((member line '("y" "yes") :test #'string=) (return t))
+                 ((member line '("n" "no") :test #'string=) (return nil))
+                 (t (format t "Please answer y or n.~%")))))
+
+(defun read-token-list (line)
+  (with-input-from-string (in (trim-input line))
+    (loop for token = (read in nil :eof)
+          until (eql token :eof)
+          collect token)))
+
+(defun prompt-integer-choice (prompt valid-predicate)
+  (loop for value = (parse-line-integer (prompt-line prompt))
+        do (when (and value (funcall valid-predicate value))
+             (return value))
+           (format t "Invalid choice.~%")))
+
+(defun prompt-card-indices (prompt player minimum-count maximum-count)
+  (loop for tokens = (read-token-list (prompt-line prompt))
+        for cards-length = (length (hand player))
+        do (when (and (>= (length tokens) minimum-count)
+                      (or (null maximum-count) (= (length tokens) maximum-count))
+                      (every #'integerp tokens)
+                      (= (length tokens) (length (remove-duplicates tokens)))
+                      (every (lambda (index)
+                               (and (>= index 0)
+                                    (< index cards-length)))
+                             tokens))
+             (return tokens))
+           (format t "Please enter valid card indices.~%")))
+
+(defun goal-label (goal)
+  (typecase goal
+    (trio "Trio")
+    (seq "Sequence")
+    (t "Goal")))
+
+(defun make-goal-from-choice (choice)
+  (ecase choice
+    (1 (make-trio))
+    (2 (make-seq))))
+
+(defun select-hand-cards (player indices)
+  (mapcar (lambda (index) (nth index (hand player))) indices))
+
+(defun remove-cards-from-hand (player cards)
+  (dolist (card cards)
+    (setf (hand player) (remove card (hand player) :count 1))))
+
+(defun lay-down-goal-from-hand (player goal-choice indices)
+  (let* ((goal (make-goal-from-choice goal-choice))
+         (cards (select-hand-cards player indices)))
+    (lay-down cards goal)
+    (remove-cards-from-hand player cards)
+    (push goal (board player))
+    goal))
+
+(defun collect-goal-slots (player others)
+  (loop for owner in (cons player others)
+        append (loop for goal in (board owner)
+                     for board-index from 0
+                     collect (list :owner owner
+                                   :goal goal
+                                   :board-index board-index))))
+
+(defun describe-goal-slot (slot index)
+  (let ((owner (getf slot :owner))
+        (goal (getf slot :goal))
+        (board-index (getf slot :board-index)))
+    (format nil "[~a] ~a / ~a ~a"
+            index
+            (playername owner)
+            (1+ board-index)
+            (goal-label goal))))
+
+(defun prompt-goal-slot (player others)
+  (let ((slots (collect-goal-slots player others)))
+    (when slots
+      (format t "~%Available goals:~%")
+      (loop for slot in slots
+            for index from 0
+            do (format t "~a~%" (describe-goal-slot slot index)))
+      (prompt-integer-choice "Select a goal index: "
+                             (lambda (choice)
+                               (< -1 choice (length slots)))))))
+
+(defun prompt-sequence-position ()
+  (loop for line = (string-downcase (trim-input (prompt-line
+                                                 "Add card at [begin/end/index]: ")))
+        do (cond ((string= line "begin") (return :begin))
+                 ((string= line "end") (return :end))
+                 (t (let ((value (parse-line-integer line)))
+                      (when value (return value))
+                      (format t "Please enter begin, end, or a card index.~%"))))))
+
+(defun add-card-from-hand-to-goal (player goal card-index position)
+  (let ((card (nth card-index (hand player))))
+    (add-card card position goal)
+    (setf (hand player) (remove card (hand player) :count 1))
+    card))
+
+(defun prompt-lay-down-phase (player)
+  (format t "~%Choose goal type: [1] Trio or [2] Sequence~%")
+  (let* ((goal-choice (prompt-integer-choice "> " (lambda (choice)
+                                                    (member choice '(1 2)))))
+         (indices (prompt-card-indices
+                   (if (= goal-choice 1)
+                       "Enter 3 hand indices for the trio: "
+                       "Enter at least 4 hand indices for the sequence: ")
+                   player
+                   (if (= goal-choice 1) 3 4)
+                   (if (= goal-choice 1) 3 nil))))
+    (lay-down-goal-from-hand player goal-choice indices)
+    (format t "Goal added to your board.~%")
+    t))
+
+(defun prompt-add-card-phase (player others)
+  (let ((slot-index (prompt-goal-slot player others)))
+    (if slot-index
+        (let* ((slots (collect-goal-slots player others))
+               (slot (nth slot-index slots))
+               (goal (getf slot :goal))
+               (position (if (typep goal 'trio)
+                             (prompt-integer-choice "Card position [0-2]: "
+                                                    (lambda (choice)
+                                                      (and (>= choice 0)
+                                                           (< choice 3))))
+                             (prompt-sequence-position)))
+               (card-index (prompt-integer-choice
+                            "Select a card index from hand: "
+                            (lambda (choice)
+                              (and (>= choice 0)
+                                   (< choice (length (hand player))))))))
+          (add-card-from-hand-to-goal player goal card-index position)
+          (format t "Card added to goal.~%")
+          t)
+        (progn
+          (format t "No goals are available to extend.~%")
+          nil))))
+
+(defun offer-discard-pile-to-others (others discard-pile)
+  (when (not (stack-empty-p discard-pile))
+    (dolist (other others)
+      (when (prompt-yes-no
+             (format nil "~a, do you want to draw from the discard pile? (y/n) "
+                     (playername other)))
+        (draw-card other discard-pile)
+        (format t "~a drew from the discard pile.~%" (playername other))
+        (return t)))))
+
 (defun draw-phase (player others deck discard-pile)
   "Handle draw phase for PLAYER."
-  (declare (ignore others))
-  (force-output)
-  (format t "~a's turn. Draw from [1] Deck or [2] Discard pile? " (playername player))
-  (force-output)
-  (let ((choice (read)))
-    (cond ((= choice 1)
-           (unless (stack-empty-p deck)
-             (draw-card player deck)))
-          ((= choice 2)
-           (unless (stack-empty-p discard-pile)
-             (draw-card player (make-stack))))
-          (t (progn
-               (format t "Invalid choice~%")
-               (draw-phase player others deck discard-pile))))))
+  (loop for choice = (prompt-integer-choice
+                      (format nil "~a's turn. Draw from [1] Deck or [2] Discard pile? "
+                              (playername player))
+                      (lambda (value) (member value '(1 2))))
+        do (cond ((= choice 1)
+                  (if (stack-empty-p deck)
+                      (format t "Deck is empty.~%")
+                      (progn
+                        (draw-card player deck)
+                        (offer-discard-pile-to-others others discard-pile)
+                        (return t))))
+                 ((= choice 2)
+                  (if (stack-empty-p discard-pile)
+                      (format t "Discard pile is empty.~%")
+                      (progn
+                        (draw-card player discard-pile)
+                        (offer-discard-pile-to-others others discard-pile)
+                        (return t)))))))
 
 (defun discard-phase (player discard-pile)
   "Handle discard phase for PLAYER."
-  (format t "~a's cards: ~a~%" (playername player) (hand player))
-  (format t "Select card index to discard (0-~a): " (1- (length (hand player))))
-  (let ((idx (read-line)))
-    (cond ((and (integerp idx) (>= idx 0) (< idx (length (hand player))))
-           (discard-card player (nth idx (hand player)) discard-pile))
-          (t (format t "Invalid selection~%")
-             (discard-phase player discard-pile)))))
+  (when (null (hand player))
+    (format t "~a has no cards left to discard.~%" (playername player))
+    (return-from discard-phase nil))
+  (loop
+    do (format t "~a's cards: ~a~%" (playername player) (hand player))
+       (let ((idx (prompt-integer-choice
+                   (format nil "Select card index to discard (0-~a): "
+                           (max 0 (1- (length (hand player)))))
+                   (lambda (choice)
+                     (and (>= choice 0)
+                          (< choice (length (hand player))))))))
+         (discard-card player (nth idx (hand player)) discard-pile)
+         (return t))))
 
 (defun turn (player others deck discard-pile)
   "Execute a turn for PLAYER."
@@ -472,14 +651,20 @@
   (draw-phase player others deck discard-pile)
   
   ;; Lay down phase (if they have completed their goal)
-  (format t "~a, do you want to lay down cards? (y/n) " (playername player))
-  (when (equal (read) 'y)
-    (format t "Lay down implementation needed~%"))
+  (loop while (prompt-yes-no
+               (format nil "~a, do you want to lay down a new goal? (y/n) "
+                       (playername player)))
+        do (prompt-lay-down-phase player))
   
   ;; Add to existing goals
-  (format t "~a, do you want to add cards to goals? (y/n) " (playername player))
-  (when (equal (read) 'y)
-    (format t "Add cards implementation needed~%"))
+  (loop while (prompt-yes-no
+               (format nil "~a, do you want to add a card to a goal? (y/n) "
+                       (playername player)))
+        do (prompt-add-card-phase player others))
+  
+  (when (null (hand player))
+    (format t "~a emptied their hand during goal actions.~%" (playername player))
+    (return-from turn t))
   
   ;; Discard phase
   (discard-phase player discard-pile))

@@ -767,3 +767,84 @@
         ;; Add to sequence
         (add-card (make-card 7 :suite :spades) :end seq)
         (is = (length (view-goal seq)) 5 "Sequence should have 5 cards")))))
+
+;;; ============================================================================
+;;; TURN FLOW TESTS
+;;; ============================================================================
+
+(define-test turn-flow)
+
+(define-test draw-phase-uses-discard-pile
+  :parent turn-flow
+  (let* ((player (make-player "Alice"))
+         (other (make-player "Bob"))
+         (deck (make-stack))
+         (discard (make-stack))
+         (deck-card (make-card 9 :points 9 :suite :clubs))
+         (discard-card (make-card 7 :points 7 :suite :hearts)))
+    (stack-push deck-card deck)
+    (stack-push discard-card discard)
+    (with-input-from-string (*standard-input* (format nil "1~%y~%"))
+      (draw-phase player (list other) deck discard))
+    (is = (length (hand player)) 1 "Active player should draw one card")
+    (is equal (first (hand player)) deck-card "Active player should draw from deck")
+    (is = (length (hand other)) 1 "Other player should be offered the discard pile")
+    (is equal (first (hand other)) discard-card "Other player should take the discard")))
+
+(define-test discard-phase-validates-input
+  :parent turn-flow
+  (let ((player (make-player "Alice"))
+        (discard (make-stack))
+        (card-a (make-card 4 :points 4 :suite :clubs))
+        (card-b (make-card 6 :points 6 :suite :hearts)))
+    (push card-a (hand player))
+    (push card-b (hand player))
+    (with-input-from-string (*standard-input* (format nil "x~%0~%"))
+      (discard-phase player discard))
+    (is = (length (hand player)) 1 "One card should remain after discard")
+    (is equal (stack-top discard) card-b "Selected card should be discarded")))
+
+(define-test lay-down-helper-moves-cards-to-board
+  :parent turn-flow
+  (let ((player (make-player "Alice")))
+    (push (make-card 2 :points 2 :suite :clubs) (hand player))
+    (push (make-card 2 :points 2 :suite :hearts) (hand player))
+    (push (make-card 2 :points 2 :suite :diamonds) (hand player))
+    (eleven::lay-down-goal-from-hand player 1 '(0 1 2))
+    (is = (length (hand player)) 0 "Cards used for the goal should leave the hand")
+    (is = (length (board player)) 1 "Goal should be added to the board")
+    (is = (length (view-goal (first (board player)))) 3 "Board goal should contain three cards")))
+
+(define-test add-card-helper-extends-goal
+  :parent turn-flow
+  (let ((player (make-player "Alice")))
+    (push (make-card 3 :points 3 :suite :spades) (hand player))
+    (push (make-card 4 :points 4 :suite :spades) (hand player))
+    (push (make-card 5 :points 5 :suite :spades) (hand player))
+    (push (make-card 6 :points 6 :suite :spades) (hand player))
+    (let ((seq (make-seq)))
+      (lay-down (list (nth 3 (hand player))
+                      (nth 2 (hand player))
+                      (nth 1 (hand player))
+                      (nth 0 (hand player)))
+                seq)
+      (push seq (board player))
+      (push (make-card 7 :points 7 :suite :spades) (hand player))
+      (eleven::add-card-from-hand-to-goal player seq 0 :end)
+      (is = (length (hand player)) 4 "Added card should be removed from hand")
+      (is = (length (view-goal seq)) 5 "Sequence should be extended"))))
+
+(define-test turn-lays-down-and-finishes
+  :parent turn-flow
+  (let ((player (make-player "Alice"))
+        (deck (make-stack))
+        (discard (make-stack)))
+    (push (make-card 2 :points 2 :suite :clubs) (hand player))
+    (push (make-card 3 :points 3 :suite :clubs) (hand player))
+    (push (make-card 4 :points 4 :suite :clubs) (hand player))
+    (stack-push (make-card 5 :points 5 :suite :clubs) deck)
+    (with-input-from-string (*standard-input* (format nil "1~%y~%2~%0 1 2 3~%n~%n~%"))
+      (turn player nil deck discard))
+    (is = (length (hand player)) 0 "Turn should be able to end with an empty hand")
+    (is = (length (board player)) 1 "Lay-down should place a goal on the board")
+    (is = (length (view-goal (first (board player)))) 4 "Sequence should be laid down")))
