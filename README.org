@@ -1,46 +1,70 @@
 * Eleven
 
-This is a game I have played many nights with my friends. I decided to try and make this a project that will allow me playing with them, even when we are months without seeing each other.
+Eleven is a Common Lisp implementation of the card game played with a double deck.  
+The project currently has complete domain modeling and broad test coverage, while some interactive gameplay pieces are still in progress.
 
 ** Rules
 
-Here are the initial set of rules I've remembered to write this game:
- - two decks of cards
- - each player starts with 11 cards in hand
- - at least two players
- - the goal is to make trios and sequences acording to the following table:
- |trio|sequence|
- |  2 |    0   |
- |  1 |    1   |
- |  0 |    2   |
- |  3 |    0   |
- |  2 |    1   |
- |  1 |    2   |
- |  0 |    3   |
+Implemented rule model:
+- two decks of cards
+- each player starts with 11 cards in hand
+- 2 to 6 players
+- round goals:
+| trio | sequence |
+|------+----------|
+| 2    | 0        |
+| 1    | 1        |
+| 0    | 2        |
+| 3    | 0        |
+| 2    | 1        |
+| 1    | 2        |
+| 0    | 3        |
+- a trio is three cards with the same face (with joker restrictions)
+- a sequence is 4+ consecutive cards in the same suite (with joker and ace rules)
 
- - a trio is a group of three cards with the same number/figures
- -  a sequence is a sequence of at least 4 consecutive cards of the same suite
+Turn flow currently modeled:
+- draw phase: the active player starts by taking a card from the deck or discard pile, then the other players get a chance to draw from the discard pile before play continues
+- lay-down phase: if the player has completed the round goal, they can place the cards that satisfy it onto their board
+- add-to-goals phase: after laying down, the player can try to attach cards from hand to existing trios or sequences on any board
+- discard phase: the turn ends by discarding one card from hand
 
-the goal of each game is to complete the defined task and empty ones hand the game processes the following way:
- - in the start of a player turn, draw a card either from the deck or from the discard pile.
- - after that the other players have the option to draw cards from the discard pile
- - at the end of its turn, a card must be discarded to the discard pile
- - In a players turn, if he has the goal completed, he can put the cards that complete the goal into its board.
- - then he can proceed to put cards from his hand that fit in other players boards
- - the jokers can represent any card, but a sequence cannot have two consecutive jokers, and a trio cannot be composed of three jockers.
+Round structure:
+- each round uses a specific trio/sequence goal combination from the table above
+- when a player empties their hand, the round ends and points are counted
+- the next round starts with the next player in rotation
 
+** Current development state (July 2026)
 
-** Things to still to implement [1/6]:
- - [ ] add more tests
- - [X] generic and specific add_card methods [2/2]
-   - [X] addcard trio method
-   - [X] addcard sequence method
- - [-] game mechanics [3/5]:
-   - [X] Define the goals
-   - [X] define start and end of each round
-   - [X] define turn and its stages
-   - [ ] draw, this can be in you turn or not, can be from deck or discard pile
-   - [ ] discard
- - [ ] implement the graphical layout
- - [ ] define the server
- - [ ] define player queue
+- [X] Card, player, deck, stack, trio, and sequence models
+- [X] Validation-heavy trio and sequence lay-down rules
+- [X] Add-card mechanics for trios and sequences (including joker and ace edge cases)
+- [X] Round setup and round-end bookkeeping
+- [X] Main round goal progression structure in =thegame=
+- [X] Automated tests for unit and integration behavior
+- [X] Full interactive turn actions for lay-down and adding to other goals
+- [X] Robust CLI input handling for draw/discard choices
+- [ ] Networking/server layer
+- [ ] Graphical interface
+
+** Test status
+
+Latest local run:
+- =84= test definitions
+- =196= assertions passed
+- =0= failures
+
+Run tests with:
+#+begin_src bash
+sbcl --non-interactive \
+  --eval '(require :asdf)' \
+  --eval '(asdf:load-asd "eleven.asd")' \
+  --eval '(asdf:load-asd "eleven.test.asd")' \
+  --eval '(asdf:test-system :eleven)'
+#+end_src
+
+** Code layout
+
+- =src/stack.lisp=: generic stack operations
+- =src/eleven.lisp=: domain classes, game rules, and round/turn flow
+- =test/stack-tests.lisp=: stack test suite
+- =test/eleven-tests.lisp=: cards, players, deck, goals, game setup, and integration tests
